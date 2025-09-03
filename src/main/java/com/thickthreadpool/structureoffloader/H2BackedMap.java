@@ -1,4 +1,4 @@
-package com.sap.iss;
+package com.thickthreadpool.structureoffloader;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
