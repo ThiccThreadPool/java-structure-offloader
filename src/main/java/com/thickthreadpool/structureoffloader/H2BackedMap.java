@@ -13,7 +13,7 @@ public class H2BackedMap<K, V> implements Map<K, V>
 	private int size;
 	private final Connection connection;
 
-	public H2BackedMap(String dbPath) throws SQLException
+	public H2BackedMap(String dbPath)
 	{
 		try
 		{
@@ -32,7 +32,7 @@ public class H2BackedMap<K, V> implements Map<K, V>
 		try
 		{
 			connection.createStatement().execute(
-					"CREATE TABLE IF NOT EXISTS map_table (k VARCHAR PRIMARY KEY, v " + "VARCHAR)"); //
+					"CREATE TABLE IF NOT EXISTS map_table (k VARCHAR PRIMARY KEY, v " + "VARCHAR)");
 		}
 		catch (SQLException e)
 		{
@@ -55,13 +55,25 @@ public class H2BackedMap<K, V> implements Map<K, V>
 	@Override
 	public boolean containsKey(final Object key)
 	{
-		return false;
+		return get(key) != null;
 	}
 
 	@Override
 	public boolean containsValue(final Object value)
 	{
-		return false;
+		try{
+			var ps = connection.prepareStatement("SELECT COUNT(*) AS count FROM map_table WHERE v = ?");
+			ps.setObject(1, value);
+			var rs = ps.executeQuery();
+			if(rs.next()){
+				return rs.getInt("count") > 0;
+			}
+			return false;
+		}
+		catch (SQLException e)
+		{
+			throw new RuntimeException(e);
+		}
 	}
 
 	@Override
@@ -93,6 +105,8 @@ public class H2BackedMap<K, V> implements Map<K, V>
 			ps.setObject(1, key);
 			ps.setObject(2, value);
 			ps.execute();
+
+			size++;
 		}
 		catch (SQLException e)
 		{
@@ -104,31 +118,83 @@ public class H2BackedMap<K, V> implements Map<K, V>
 	@Override
 	public V remove(final Object key)
 	{
-		return null;
+		var v = get(key);
+
+		try
+		{
+			var ps = connection.prepareStatement("DELETE FROM map_table WHERE k = ?");
+			ps.setObject(1, key);
+			ps.execute();
+
+			size--;
+		}
+		catch (SQLException e)
+		{
+			throw new RuntimeException(e);
+		}
+		return v;
 	}
 
 	@Override
 	public void putAll(final Map m)
 	{
-
+		for (Object key : m.keySet())
+		{
+			put(key, m.get(key));
+		}
 	}
 
 	@Override
 	public void clear()
 	{
-
+		try
+		{
+			connection.createStatement().execute("DELETE FROM map_table");
+			size = 0;
+		}
+		catch (SQLException e)
+		{
+			throw new RuntimeException(e);
+		}
 	}
 
 	@Override
 	public Set keySet()
 	{
-		return Set.of();
+		try
+		{
+			var ps = connection.prepareStatement("SELECT k FROM map_table");
+			var rs = ps.executeQuery();
+			Set<K> keys = new java.util.HashSet<>();
+			while (rs.next())
+			{
+				keys.add((K) rs.getObject("k"));
+			}
+			return keys;
+		}
+		catch (SQLException e)
+		{
+			throw new RuntimeException(e);
+		}
 	}
 
 	@Override
-	public Collection values()
+	public Collection<V> values()
 	{
-		return List.of();
+		try{
+			var ps = connection.prepareStatement("SELECT v FROM map_table");
+			var rs = ps.executeQuery();
+			List<V> values = new java.util.ArrayList<>();
+			while (rs.next())
+			{
+				values.add((V) rs.getObject("v"));
+			}
+			return values;
+		}
+		catch (SQLException e)
+		{
+			throw new RuntimeException(e);
+		}
 	}
 
 	@Override
@@ -140,12 +206,12 @@ public class H2BackedMap<K, V> implements Map<K, V>
 	@Override
 	public boolean equals(final Object o)
 	{
-		return false;
+		return this == o;
 	}
 
 	@Override
 	public int hashCode()
 	{
-		return 0;
+		return System.identityHashCode(this);
 	}
 }
