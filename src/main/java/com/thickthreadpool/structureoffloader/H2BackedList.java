@@ -9,6 +9,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 
+import jdk.jshell.spi.ExecutionControl;
+
 public class H2BackedList<E> implements List<E>
 {
 	private Connection connection;
@@ -284,7 +286,8 @@ public class H2BackedList<E> implements List<E>
 	@Override
 	public void clear()
 	{
-		try{
+		try
+		{
 			connection.createStatement().execute("DELETE FROM list_table");
 			size = 0;
 		}
@@ -297,11 +300,13 @@ public class H2BackedList<E> implements List<E>
 	@Override
 	public E get(final int index)
 	{
-		try{
+		try
+		{
 			var ps = connection.prepareStatement("SELECT v FROM list_table ORDER BY id LIMIT 1 OFFSET ?");
 			ps.setInt(1, index);
 			var rs = ps.executeQuery();
-			if(rs.next()){
+			if (rs.next())
+			{
 				return (E) rs.getObject(1);
 			}
 		}
@@ -315,6 +320,18 @@ public class H2BackedList<E> implements List<E>
 	@Override
 	public E set(final int index, final E element)
 	{
+		try
+		{
+			var ps = connection.prepareStatement("SELECT v FROM list_table ORDER BY id LIMIT 1 OFFSET ?");
+			ps.setInt(1, index);
+			var rs = ps.executeQuery();
+
+
+		}
+		catch (SQLException e)
+		{
+			throw new RuntimeException(e);
+		}
 		return null;
 	}
 
@@ -327,36 +344,91 @@ public class H2BackedList<E> implements List<E>
 	@Override
 	public E remove(final int index)
 	{
+		try
+		{
+			E value = get(index);
+			if (value != null)
+			{
+				var ps = connection.prepareStatement(
+						"DELETE FROM list_table WHERE id = (SELECT id FROM list_table ORDER BY id LIMIT 1 OFFSET ?)");
+				ps.setInt(1, index);
+				int affectedRows = ps.executeUpdate();
+				if (affectedRows > 0)
+				{
+					size--;
+					return value;
+				}
+			}
+		}
+		catch (SQLException e)
+		{
+			throw new RuntimeException(e);
+		}
 		return null;
 	}
 
 	@Override
 	public int indexOf(final Object o)
 	{
-		return 0;
+		try
+		{
+			throw new ExecutionControl.NotImplementedException("Not implemented");
+		}
+		catch (ExecutionControl.NotImplementedException e)
+		{
+			throw new RuntimeException(e);
+		}
 	}
 
 	@Override
 	public int lastIndexOf(final Object o)
 	{
-		return 0;
+		try
+		{
+			throw new ExecutionControl.NotImplementedException("Not implemented");
+		}
+		catch (ExecutionControl.NotImplementedException e)
+		{
+			throw new RuntimeException(e);
+		}
 	}
 
 	@Override
 	public ListIterator<E> listIterator()
 	{
-		return null;
+		try
+		{
+			throw new ExecutionControl.NotImplementedException("Not implemented");
+		}
+		catch (ExecutionControl.NotImplementedException e)
+		{
+			throw new RuntimeException(e);
+		}
 	}
 
 	@Override
 	public ListIterator<E> listIterator(final int index)
 	{
-		return null;
+		try
+		{
+			throw new ExecutionControl.NotImplementedException("Not implemented");
+		}
+		catch (ExecutionControl.NotImplementedException e)
+		{
+			throw new RuntimeException(e);
+		}
 	}
 
 	@Override
 	public List<E> subList(final int fromIndex, final int toIndex)
 	{
-		return List.of();
+		try
+		{
+			throw new ExecutionControl.NotImplementedException("Not implemented");
+		}
+		catch (ExecutionControl.NotImplementedException e)
+		{
+			throw new RuntimeException(e);
+		}
 	}
 }
